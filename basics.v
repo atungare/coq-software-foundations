@@ -423,6 +423,10 @@ Proof. reflexivity. Qed.
 Example test_bin_incr4: (bin_to_nat (incr (incr (incr Zero)))) = 3.
 Proof. reflexivity. Qed.
 
-Example test_bin_incr5: (bin_to_nat (incr Zero)) = (bin_to_nat Zero) + 1.
+Example test_bin_incr5: (bin_to_nat (incr Zero)) = S (bin_to_nat Zero).
 Proof. reflexivity. Qed.
 
+(* ??? *)
+Theorem incr_bin_to_nat_commutative: forall b:bin,
+  (bin_to_nat (incr b)) = S (bin_to_nat b).
+Proof. Admitted.
