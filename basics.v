@@ -47,6 +47,11 @@ Definition orb (b1:bool) (b2:bool) : bool :=
   | false => b2
   end.
 
+Compute (andb true true).
+Compute (andb true false).
+Compute (andb false true).
+Compute (andb false false).
+
 Example test_orb1: (orb true false) = true.
 Proof. simpl. reflexivity. Qed.
 Example test_orb2: (orb false false) = false.
@@ -288,3 +293,120 @@ Proof.
   rewrite <- H.
   reflexivity.  Qed.
 
+Theorem plus_1_neq_0: forall n : nat,
+  beq_nat (n + 1) 0 = false.
+Proof.
+  intros n. destruct n as [| n'].
+  - reflexivity.
+  - reflexivity.
+ Qed.
+
+Theorem negb_involutive : forall b : bool,
+  negb (negb b) = b.
+Proof.
+  intros b. destruct b.
+  - reflexivity.
+  - reflexivity.
+  Qed.
+
+Theorem andb_commutative: forall a b: bool,
+  a && b = b && a.
+Proof.
+  intros a b. destruct a.
+    - destruct b.
+      + reflexivity.
+      + reflexivity.
+    - destruct b.
+      + reflexivity.
+      + reflexivity.
+  Qed.
+
+
+Theorem andb_true_elim2 : forall b c: bool,
+   (b && c) = true -> c = true.
+Proof.
+  intros [] [].
+  intros H.
+  - reflexivity.
+  - simpl. intros. rewrite -> H. reflexivity.
+  - simpl. intros. reflexivity.
+  - simpl. intros. rewrite -> H. reflexivity.
+Qed.
+
+Theorem zero_nbeq_plus_1 : forall n: nat,
+  beq_nat 0 (n + 1) = false.
+Proof.
+  intros [| n'].
+  - reflexivity.
+  - reflexivity. Qed.
+
+(* Fixpoint blah (n: nat) : nat :=
+  match n with
+  | O => blah (S O)
+  | _ => n
+  end.
+*)
+
+
+Theorem identity_fn_applied_twice :
+  forall (f : bool -> bool), (forall (x : bool), f x = x) ->
+    forall (b : bool), f (f b) = b.
+Proof.
+  intros.
+  destruct b.
+  - rewrite -> H.
+    rewrite -> H.
+    reflexivity.
+  - rewrite -> H.
+    rewrite -> H.
+    reflexivity.
+Qed.
+
+Theorem negation_fn_applied_twice : forall (f : bool -> bool),
+  (forall (x : bool), f x = negb x) ->
+    forall (b : bool), f (f b) = b.
+Proof.
+  intros.
+  destruct b.
+  - rewrite -> H.
+    rewrite -> H.
+    reflexivity.
+  - rewrite -> H.
+    rewrite -> H.
+    reflexivity.
+Qed.
+
+Theorem andb_eq_orb : forall (b c: bool),
+  (b && c = b || c) -> b = c.
+Proof.                                     
+  intros b c.
+  destruct b.
+  - destruct c.
+    + reflexivity.
+    + simpl. intros. rewrite -> H. reflexivity.
+  - destruct c.
+    + simpl. intros. rewrite -> H. reflexivity.
+    + reflexivity.
+Qed.
+
+
+Inductive bin : Type :=
+  | Zero : bin
+  | Twice : bin -> bin
+  | TwicePlusOne : bin -> bin.
+
+Fixpoint incr (b: bin) : bin :=
+  match b with
+  | Zero => Twice Zero
+  | Twice n => TwicePlusOne n
+  | TwicePlusOne n => Twice (incr n)
+  end.
+
+Fixpoint bin_to_nat (b: bin) : nat :=
+  match b with
+  | Zero => O
+  | Twice n => exp 2 (bin_to_nat n)
+  | TwicePlusOne n => (exp 2 ((bin_to_nat n) + 1))
+  end.
+
+Compute (bin_to_nat (incr (incr (incr Zero)))).
