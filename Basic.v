@@ -260,6 +260,13 @@ Proof.
   - simpl. rewrite <- IHn'. reflexivity.
 Qed.
 
+Theorem plus_1_r: forall n: nat, S n = n + 1.
+Proof.
+  intros.
+  induction n as [| n' IHn'].  
+  - simpl. reflexivity.
+  - simpl. rewrite -> IHn'. reflexivity.
+Qed.
 
 Theorem plus_id_example: forall n m : nat,
   n = m ->
