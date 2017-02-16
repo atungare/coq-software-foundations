@@ -397,7 +397,7 @@ Inductive bin : Type :=
 
 Fixpoint incr (b: bin) : bin :=
   match b with
-  | Zero => Twice Zero
+  | Zero => TwicePlusOne Zero
   | Twice n => TwicePlusOne n
   | TwicePlusOne n => Twice (incr n)
   end.
@@ -405,8 +405,24 @@ Fixpoint incr (b: bin) : bin :=
 Fixpoint bin_to_nat (b: bin) : nat :=
   match b with
   | Zero => O
-  | Twice n => exp 2 (bin_to_nat n)
-  | TwicePlusOne n => (exp 2 ((bin_to_nat n) + 1))
+  | Twice n => mult 2 (bin_to_nat n)
+  | TwicePlusOne n => (mult 2 (bin_to_nat n)) + 1
   end.
 
-Compute (bin_to_nat (incr (incr (incr Zero)))).
+Compute (bin_to_nat (incr (incr (incr (incr Zero))))).
+
+Example test_bin_incr1: (bin_to_nat Zero) = 0.
+Proof. reflexivity. Qed.
+
+Example test_bin_incr2: (bin_to_nat (incr Zero)) = 1.
+Proof. reflexivity. Qed.
+
+Example test_bin_incr3: (bin_to_nat (incr (incr Zero))) = 2.
+Proof. reflexivity. Qed.
+
+Example test_bin_incr4: (bin_to_nat (incr (incr (incr Zero)))) = 3.
+Proof. reflexivity. Qed.
+
+Example test_bin_incr5: (bin_to_nat (incr Zero)) = (bin_to_nat Zero) + 1.
+Proof. reflexivity. Qed.
+
