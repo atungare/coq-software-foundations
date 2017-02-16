@@ -254,8 +254,11 @@ Proof.
 
 Theorem plus_O_r: forall n : nat, n = n + O.
 Proof.
-  intros n. simpl.
-  Abort.
+  intros n.
+  induction n as [| n' IHn'].
+  - reflexivity.
+  - simpl. rewrite <- IHn'. reflexivity.
+Qed.
 
 
 Theorem plus_id_example: forall n m : nat,
@@ -426,7 +429,7 @@ Proof. reflexivity. Qed.
 Example test_bin_incr5: (bin_to_nat (incr Zero)) = S (bin_to_nat Zero).
 Proof. reflexivity. Qed.
 
-(* ??? *)
+(* is_this_induction ??? *)
 Theorem incr_bin_to_nat_commutative: forall b:bin,
   (bin_to_nat (incr b)) = S (bin_to_nat b).
 Proof. Admitted.
