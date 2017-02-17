@@ -25,6 +25,7 @@ Proof.
   induction n as [| n' IHn'].
   - reflexivity.
   - simpl. rewrite -> IHn'. reflexivity.
+Qed.
 
 Theorem plus_n_Sm: forall n m:nat,
   S (n + m) = n + (S m).
