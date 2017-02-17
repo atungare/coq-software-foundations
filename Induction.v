@@ -113,6 +113,18 @@ Proof.
   reflexivity.
 Qed.
 
+Theorem mult_a_Sb: forall a b:nat,
+  a * S b = a + a * b.
+Proof.
+  intros.
+  induction a as [| a' IHa'].
+  - simpl.
+    reflexivity.
+  - simpl.
+    rewrite -> IHa'.
+    rewrite -> plus_swap.
+    reflexivity.
+Qed.
 
 Theorem mult_comm: forall n m:nat,
   m * n = n * m.
@@ -122,6 +134,51 @@ Proof.
   - rewrite -> mult_O_l. rewrite -> mult_O_r. reflexivity.
   - simpl. rewrite <- IHn'. induction m as [| m' IHm'].
     + simpl. reflexivity.
-    Abort.  
+    + simpl.
+      rewrite -> mult_a_Sb.
+      rewrite -> plus_swap.
+      reflexivity.
+Qed.
 
-  
+
+(* exercises *)
+
+Theorem beq_nat_refl : forall n : nat,
+  true = beq_nat n n.
+Proof.
+  intros.
+  induction n as [| n' IHn'].
+  - simpl. reflexivity.
+  - simpl. rewrite -> IHn'. reflexivity.
+Qed.
+
+Theorem plus_swap' : forall n m p:nat,
+  n + (m + p) = m + (n + p).
+Proof.
+  intros.
+  intros.
+  rewrite <- plus_assoc.
+  assert (H: m + (n + p) = (m + n) + p). { rewrite -> plus_assoc. reflexivity. }
+  rewrite -> H.
+  rewrite <- plus_comm.
+  replace (m + n + p) with (p + (m + n)).
+  - replace (n + m) with (m + n).
+    + reflexivity.
+    + rewrite -> plus_comm. reflexivity.
+  - rewrite -> plus_comm. reflexivity.
+Qed.
+
+Theorem bin_to_nat_pres_incr: forall b:bin,
+  (bin_to_nat (incr b)) = S (bin_to_nat b).
+Proof.
+  intros.
+  induction b as [| b' | b'' IHb'].
+  - simpl. reflexivity.
+  - simpl. rewrite <- plus_1_r. reflexivity.
+  - simpl. rewrite -> IHb'. simpl.
+    replace (bin_to_nat b'' + 0) with (bin_to_nat b'').
+    + rewrite <- plus_1_r. rewrite <- plus_n_Sm. reflexivity.
+    + rewrite <- plus_O_r. reflexivity.
+Qed.
+
+(* binary inverse *)
