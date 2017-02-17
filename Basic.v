@@ -252,6 +252,14 @@ Theorem mult_O_l: forall n : nat, O * n = O.
 Proof.
   intros n. reflexivity. Qed.
 
+Theorem mult_O_r: forall n: nat, n * O = O.
+Proof.
+  intros.
+  induction n as [| n' IHn'].
+  - reflexivity.
+  - simpl. rewrite -> IHn'. reflexivity.
+Qed.
+
 Theorem plus_O_r: forall n : nat, n = n + O.
 Proof.
   intros n.

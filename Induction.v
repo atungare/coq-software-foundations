@@ -80,3 +80,48 @@ Proof.
   - rewrite -> IHn'. simpl. rewrite -> negb_involutive. reflexivity.
 Qed.
 
+Theorem mult_O_plus: forall n m:nat,
+  (O + n) * m = n * m.
+Proof.
+  intros.
+  assert (H: O + n = n). { reflexivity. }
+  rewrite -> H.
+  reflexivity.
+Qed.
+
+Theorem plus_rearrange : forall n m p q:nat,
+  (n + m) + (p + q) = (m + n) + (p + q).
+Proof.
+  intros.
+  assert (H: n + m = m + n). { rewrite -> plus_comm. reflexivity. }
+  rewrite -> H.
+  reflexivity.
+Qed.
+
+Theorem plus_swap : forall n m p:nat,
+  n + (m + p) = m + (n + p).
+Proof.
+  intros.
+  rewrite <- plus_assoc.
+  assert (H: m + (n + p) = (m + n) + p). { rewrite -> plus_assoc. reflexivity. }
+  rewrite -> H.
+  rewrite <- plus_comm.
+  assert (I: m + n + p = p + (m + n)). { rewrite -> plus_comm. reflexivity. }
+  rewrite -> I.
+  assert (J: n + m = m + n). { rewrite -> plus_comm. reflexivity. }
+  rewrite -> J.
+  reflexivity.
+Qed.
+
+
+Theorem mult_comm: forall n m:nat,
+  m * n = n * m.
+Proof.
+  intros.
+  induction n as [| n' IHn'].
+  - rewrite -> mult_O_l. rewrite -> mult_O_r. reflexivity.
+  - simpl. rewrite <- IHn'. induction m as [| m' IHm'].
+    + simpl. reflexivity.
+    Abort.  
+
+  
