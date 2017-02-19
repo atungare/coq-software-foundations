@@ -454,3 +454,108 @@ Qed.
 
 
 
+Inductive natoption : Type :=
+  | Some : nat -> natoption
+  | None : natoption.
+
+Fixpoint nth_error (l:natlist) (n:nat) : natoption :=
+  match l with
+  | [] => None
+  | x :: l' => match n with
+               | O => Some x
+               | S n' => nth_error l' n'
+               end
+  end.
+
+Example test_nth_error1 : nth_error [4;5;6;7] 0 = Some 4.
+Proof. reflexivity. Qed.
+Example test_nth_error2 : nth_error [4;5;6;7] 3 = Some 7.
+Proof. reflexivity. Qed.
+Example test_nth_error3 : nth_error [4;5;6;7] 9 = None.
+Proof. reflexivity. Qed.
+
+
+Definition option_elim (def : nat) (o : natoption) : nat :=
+  match o with
+  | None => def
+  | Some x => x
+  end.
+
+Definition hd_error (l : natlist) : natoption :=
+  match l with
+  | [] => None
+  | h :: _ => Some h
+  end.
+
+Example test_hd_error1 : hd_error [] = None.
+Proof. reflexivity. Qed.
+
+Example test_hd_error2 : hd_error [1] = Some 1.
+Proof. reflexivity. Qed.
+
+Example test_hd_error3 : hd_error [5;6] = Some 5.
+Proof. reflexivity. Qed.
+
+Theorem option_elim_hd : forall (l:natlist) (default:nat),
+  hd default l = option_elim default (hd_error l).
+Proof.
+  intros.
+  destruct l.
+  - reflexivity.
+  - reflexivity.
+Qed.
+
+End NatList.
+
+Inductive id : Type :=
+  | Id : nat -> id.
+
+Definition beq_id (i j: id) :=
+  match i, j with
+  | Id x, Id y => beq_nat x y
+  end.
+
+Theorem beq_id_refl : forall x, true = beq_id x x.
+Proof.
+  intros.
+  destruct x as [x'].
+  simpl. rewrite <- beq_nat_refl.
+  reflexivity.
+Qed.
+
+Module PartialMap.
+Export NatList.
+
+Inductive partial_map : Type :=
+  | empty : partial_map
+  | record : id -> nat -> partial_map -> partial_map.
+
+Definition update (d:partial_map) (x:id) (val:nat) :=
+  record x val d.
+
+Fixpoint find (x:id) (d:partial_map) : natoption :=
+  match d with
+  | empty => None
+  | record k v d' => if beq_id x k then Some v
+                                    else find x d'
+  end.
+
+Theorem update_eq :
+  forall (d : partial_map) (x : id) (v: nat),
+    find x (update d x v) = Some v.
+Proof.
+  intros.
+  simpl. rewrite <- beq_id_refl. reflexivity.
+Qed.
+
+
+Theorem update_neq :
+  forall (d : partial_map) (x y : id) (o: nat),
+    beq_id x y = false -> find x (update d y o) = find x d.
+Proof.
+  intros.
+  simpl. rewrite -> H. reflexivity.
+Qed.
+
+End PartialMap.
+
