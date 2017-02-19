@@ -176,7 +176,7 @@ Definition bag := natlist.
 Fixpoint count (v:nat) (s:bag) : nat :=
   match s with
   | [] => 0
-  | h :: t => (count v t) + (if beq_nat h v then 1 else 0)
+  | h :: t => (if beq_nat h v then 1 else 0) + (count v t)
   end.
 
 Example test_count1: count 1 [1;2;3;1;4;1] = 3.
@@ -312,4 +312,145 @@ Proof.
     rewrite -> IHl'.
     reflexivity.
 Qed.
+
+Theorem app_nil_r : forall l : natlist,
+  l ++ [] = l.
+Proof.
+  intros.
+  induction l as [| h t IH].
+  - simpl. reflexivity.
+  - simpl. rewrite -> IH. reflexivity.
+Qed.
+
+Theorem rev_app_distr: forall l1 l2 : natlist,
+  rev (l1 ++ l2) = rev l2 ++ rev l1.
+Proof.
+  intros.
+  induction l1 as [| h1 t1 IH].
+  - simpl. destruct l2 as [| h2 t2].
+    + simpl. reflexivity.
+    + simpl. rewrite -> app_nil_r. reflexivity.
+  - simpl. destruct l2 as [| h2 t2].
+    + simpl. rewrite -> app_nil_r. reflexivity.
+    + rewrite -> IH. simpl. rewrite -> app_assoc. reflexivity.
+Qed.
+
+
+Theorem rev_involutive : forall l : natlist,
+  rev (rev l) = l.
+Proof.
+  intros.
+  induction l as [| h t IH].
+  - simpl. reflexivity.
+  - simpl. rewrite -> rev_app_distr.
+    simpl. rewrite -> IH.
+    reflexivity.
+Qed.
+
+Theorem app_assoc4 : forall l1 l2 l3 l4 : natlist,
+  l1 ++ (l2 ++ (l3 ++ l4)) = ((l1 ++ l2) ++ l3) ++ l4.
+Proof.
+  intros.
+  rewrite -> app_assoc.
+  rewrite -> app_assoc.
+  reflexivity.
+Qed.
+
+Lemma nonzeros_app : forall l1 l2 : natlist,
+  nonzeros (l1 ++ l2) = (nonzeros l1) ++ (nonzeros l2).
+Proof.
+  intros.  
+  induction l1 as [| h t IH].
+  - simpl. reflexivity.
+  - simpl.
+    destruct h as [| h'].
+    + simpl. rewrite -> IH. reflexivity.
+    + simpl. rewrite -> IH. reflexivity.
+Qed.
+
+
+Fixpoint beq_natlist (l1 l2 : natlist) : bool :=
+  match l1, l2 with
+  | [], [] => true
+  | [], _ => false
+  | _, [] => true
+  | h1 :: t1, h2 :: t2 => (beq_nat h1 h2) && (beq_natlist t1 t2)
+  end.
+
+Example test_beq_natlist1 :
+  (beq_natlist nil nil = true).
+Proof. reflexivity. Qed.
+
+Example test_beq_natlist2 :
+  beq_natlist [1;2;3] [1;2;3] = true.
+Proof. reflexivity. Qed.
+
+Example test_beq_natlist3 :
+  beq_natlist [1;2;3] [1;2;4] = false.
+Proof. reflexivity. Qed.
+
+Theorem beq_natlist_refl : forall l:natlist,
+  true = beq_natlist l l.
+Proof.
+  intros.
+  induction l as [| h t IH].
+  - simpl. reflexivity.
+  - simpl. induction h as [| h' IH'].
+    + simpl. rewrite <- IH. reflexivity.
+    + simpl. rewrite <- IH'. reflexivity.
+Qed.
+
+Theorem count_member_nonzero : forall (s : bag),
+  leb 1 (count 1 (1 :: s)) = true.
+Proof.
+  intros.
+  destruct s as [| h t].
+  - simpl. reflexivity.
+  - simpl. reflexivity.
+Qed.
+
+
+Theorem leb_n_Sn : forall n,
+  leb n (S n) = true.
+Proof.
+  intros.
+  induction n as [| n' IH].
+  - reflexivity.
+  - simpl. rewrite -> IH. reflexivity.
+Qed.
+
+Theorem remove_decreases_count: forall (s : bag),
+  leb (count 0 (remove_one 0 s)) (count 0 s) = true.
+Proof.
+  intros. 
+  induction s as [| h t IH].
+  - simpl. reflexivity.
+  - destruct h as [| h'].
+    + simpl. rewrite -> leb_n_Sn. reflexivity.
+    + simpl. rewrite -> IH. reflexivity.
+Qed.
+
+Theorem bag_count_sum: forall (s1 s2:bag),
+  count 0 (sum s1 s2) = (count 0 s1) + (count 0 s2).
+Proof.                                      
+  intros.
+  induction s1 as [| h1 t1 IH].
+  - simpl. reflexivity.
+  - destruct h1 as [| h1'].
+    + simpl. rewrite -> IH. reflexivity.
+    + simpl. rewrite -> IH. reflexivity.
+Qed.      
+
+
+Theorem rev_injective: forall (l1 l2 : natlist),
+  rev l1 = rev l2 -> l1 = l2.
+Proof.
+  intros.
+  rewrite <- rev_involutive.
+  rewrite <- H.
+  rewrite -> rev_involutive.
+  reflexivity.
+Qed.
+
+
 
