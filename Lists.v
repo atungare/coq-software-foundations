@@ -359,7 +359,7 @@ Qed.
 Lemma nonzeros_app : forall l1 l2 : natlist,
   nonzeros (l1 ++ l2) = (nonzeros l1) ++ (nonzeros l2).
 Proof.
-  intros.  
+  intros.
   induction l1 as [| h t IH].
   - simpl. reflexivity.
   - simpl.
@@ -432,14 +432,14 @@ Qed.
 
 Theorem bag_count_sum: forall (s1 s2:bag),
   count 0 (sum s1 s2) = (count 0 s1) + (count 0 s2).
-Proof.                                      
+Proof.
   intros.
   induction s1 as [| h1 t1 IH].
   - simpl. reflexivity.
   - destruct h1 as [| h1'].
     + simpl. rewrite -> IH. reflexivity.
     + simpl. rewrite -> IH. reflexivity.
-Qed.      
+Qed.
 
 
 Theorem rev_injective: forall (l1 l2 : natlist),
