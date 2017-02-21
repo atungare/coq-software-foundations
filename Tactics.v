@@ -264,3 +264,53 @@ Proof.
       reflexivity.
 Qed.
 
+Theorem double_injective_take2 : forall n m,
+     double n = double m ->
+     n = m.
+Proof.
+  intros.
+  generalize dependent n.
+  induction m as [| m' IHm].
+  - intros.
+    destruct n as [| n'].
+    + reflexivity.
+    + inversion H.
+  - intros.
+    destruct n as [| n'].
+    + inversion H.
+    + apply f_equal.
+      apply IHm.
+      inversion H.
+      reflexivity.
+Qed.
+
+
+Theorem beq_id_true : forall x y,
+  beq_id x y = true -> x = y.
+Proof.
+  intros [m] [n].
+  simpl.
+  intros.
+  assert (H' : m = n).
+  - apply beq_nat_true. apply H.
+  - rewrite -> H'. reflexivity.
+Qed.
+
+
+Theorem nth_error_after_last: forall (n : nat) (X : Type) (l : list X),
+     length l = n ->
+     nth_error l n = None.
+Proof.
+  intros.
+  generalize dependent n.
+  induction l as [| h t IH].
+  - intros.
+    rewrite <- H.
+    reflexivity.
+  - intros.
+    rewrite <- H.
+    simpl.
+    apply IH.
+    reflexivity.
+Qed.
+
