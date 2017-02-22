@@ -314,3 +314,39 @@ Proof.
     reflexivity.
 Qed.
 
+Definition square n := n * n.
+
+Lemma square_mult : forall n m, square (n * m) = square n * square m.
+Proof.
+  intros.
+  unfold square.
+  rewrite -> mult_assoc.
+  assert (H : n * m * n = n * n * m).
+  - rewrite -> mult_comm. apply mult_assoc.
+  - rewrite -> H. rewrite -> mult_assoc.
+    reflexivity.
+Qed.
+
+Definition foo (x: nat) := 5.
+
+Fact silly_fact_1 : forall m, foo m + 1 = foo (m + 1) + 1.
+Proof.
+  intros m.
+  reflexivity.
+Qed.
+
+Definition bar x :=
+  match x with
+  | O => 5
+  | S _ => 5
+  end.
+
+Fact silly_fact_2_FAILED : forall m, bar m + 1 = bar (m + 1) + 1.
+Proof.
+  intros m.
+  unfold bar.
+  destruct m.
+  - simpl. reflexivity.
+  - simpl. reflexivity.
+Qed.
+
