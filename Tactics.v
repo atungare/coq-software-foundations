@@ -636,3 +636,30 @@ Proof.
       reflexivity.
 Qed.
 
+Theorem map_length_unchanged: forall (A B: Type) (f: A -> B) (l: list A),
+    length l = length (map f l).
+Proof.
+  intros.
+  induction l as [| h t IH].
+  - reflexivity.
+  - simpl.
+    rewrite -> IH.
+    reflexivity.
+Qed.
+
+Definition flat_map_fold {X Y: Type} (f: X -> list Y) (l: list X) : list Y :=
+  fold (fun item acc => (f item) ++ acc) l [].
+
+Theorem flat_map_fold_correct: forall (X Y: Type) (f: X -> list Y) (l: list X),
+  flat_map f l = flat_map_fold f l.
+Proof.
+  intros.
+  unfold flat_map_fold.
+  unfold flat_map.
+  induction l as [| h t IH].
+  - reflexivity.
+  - simpl.
+    rewrite -> IH.
+    reflexivity.
+Qed.
+
