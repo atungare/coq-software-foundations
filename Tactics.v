@@ -350,3 +350,289 @@ Proof.
   - simpl. reflexivity.
 Qed.
 
+Definition sillyfun (n : nat) : bool :=
+  if beq_nat n 3 then false
+  else if beq_nat n 5 then false
+  else false.
+
+Theorem sillyfun_false : forall (n : nat),
+  sillyfun n = false.
+Proof.
+  intros.
+  unfold sillyfun.
+  destruct (beq_nat n 3).
+  - reflexivity.
+  - destruct (beq_nat n 5).
+    + reflexivity.
+    + reflexivity.
+Qed.
+
+Theorem tail_eq: forall (X: Type) (h: X) (l1 l2: list X),
+    l1 = l2 -> h :: l1 = h :: l2.
+Proof.
+  intros. apply f_equal. apply H.
+Qed.
+
+Theorem combine_split : forall X Y (l : list (X * Y)) l1 l2,
+  split l = (l1, l2) ->
+  combine l1 l2 = l.
+Proof.
+  intros X Y l.
+  induction l as [| h t IH].
+  - intros.
+    inversion H.
+    reflexivity.
+  - intros.
+    inversion H.
+    destruct h.
+    destruct (split t).
+    simpl in H1.
+    inversion H1.
+    simpl.
+    apply tail_eq.
+    apply IH.
+    reflexivity.
+Qed.
+
+
+Definition sillyfun1 (n : nat) : bool :=
+  if beq_nat n 3 then true
+  else if beq_nat n 5 then true
+  else false.
+
+Theorem sillyfun1_odd : forall (n : nat),
+     sillyfun1 n = true ->
+     oddb n = true.
+Proof.
+  intros.
+  unfold sillyfun1 in H.
+  destruct (beq_nat n 3) eqn:neq3.
+  - apply beq_nat_true in neq3.
+    rewrite -> neq3.
+    reflexivity.
+  - destruct (beq_nat n 5) eqn:neq5.
+    + apply beq_nat_true in neq5.
+      rewrite -> neq5.
+      reflexivity.
+    + inversion H.
+Qed.
+
+Theorem bool_fn_applied_thrice :
+  forall (f : bool -> bool) (b : bool),
+  f (f (f b)) = f b.
+Proof.
+  intros.
+  destruct b.
+  - destruct (f true) eqn:fTrue.
+    + rewrite -> fTrue.
+      apply fTrue.
+    + destruct (f false) eqn:fFalse.
+      * apply fTrue.
+      * apply fFalse.
+ - destruct (f false) eqn: fFalse.
+   + destruct (f true) eqn:fTrue.
+     * apply fTrue.
+     * apply fFalse.
+   + rewrite -> fFalse.
+     apply fFalse.
+Qed.
+
+Theorem beq_nat_sym : forall (n m : nat),
+  beq_nat n m = beq_nat m n.
+Proof.
+  intros.
+  generalize dependent m.
+  induction n as [| n' IHn].
+  - intros. destruct m as [| m'].
+    + reflexivity.
+    + reflexivity.
+  - intros. destruct m as [| m'].
+    + reflexivity.
+    + apply IHn.
+Qed.
+
+Theorem beq_nat_trans : forall n m p,
+  beq_nat n m = true ->
+  beq_nat m p = true ->
+  beq_nat n p = true.
+Proof.
+  intros.
+  destruct n as [| n'].
+  - apply beq_nat_true in H.
+    rewrite <- H in H0.
+    apply beq_nat_true in H0.
+    rewrite <- H0.
+    reflexivity.
+  - apply beq_nat_true in H.
+    rewrite <- H in H0.
+    apply H0.
+Qed.
+
+
+Definition split_combine_statement : Prop :=
+  forall (X: Type) (l1 l2: list X),
+  length l1 = length l2 ->
+  split (combine l1 l2) = (l1, l2).
+
+Theorem split_combine : split_combine_statement.
+Proof.
+  intros X l1.
+  induction l1 as [| h1 t1 IH1].
+  - intros.
+    simpl.
+    destruct l2 as [| h2 t2 IH2].
+    + reflexivity.
+    + inversion H.
+  - intros.
+    inversion H.
+    destruct l2 as [| h2 t2].
+    + inversion H1.
+    + inversion H1.
+      apply IH1 in H2.
+      simpl.
+      rewrite -> H2.
+      reflexivity.
+Qed.
+
+
+Theorem filter_exercise : forall (X : Type) (test : X -> bool) (x : X) (l lf : list X),
+     filter test l = x :: lf ->
+     test x = true.
+Proof.
+  intros.
+  generalize dependent lf.
+  induction l as [| h t IH].
+  - intros.
+    simpl in H.
+    inversion H.
+  - intros.
+    generalize dependent H.
+    destruct lf as [| hf tf].
+    + simpl.
+      intros.
+      destruct (test h) eqn:testH.
+      * inversion H.
+        rewrite -> H1 in testH.        
+        apply testH.
+      * apply IH in H.
+        apply H.
+    + simpl.
+      intros.
+      destruct (test h) eqn:testH.
+      * inversion H.
+        rewrite -> H1 in testH.
+        apply testH.
+      * apply IH in H.
+        apply H.
+Qed.
+
+Fixpoint forallb {X: Type} (test: X -> bool) (l: list X) : bool :=
+  match l with
+  | [] => true
+  | h :: t => (test h) && (forallb test t)
+  end.
+
+Fixpoint existsb {X: Type} (test: X -> bool) (l: list X) : bool :=
+  match l with
+  | [] => false
+  | h :: t => (test h) || (existsb test t)
+  end.
+
+Example forallb_1: forallb oddb [1;3;5;7;9] = true.
+Proof. reflexivity. Qed.
+
+Example forallb_2: forallb negb [false;false] = true.
+Proof. reflexivity. Qed.
+
+Example forallb_3: forallb evenb [0;2;4;5] = false.
+Proof. reflexivity. Qed.
+
+Example forallb_4: forallb (beq_nat 5) [] = true.
+Proof. reflexivity. Qed.
+
+Example existsb_1: existsb (beq_nat 5) [0;2;3;6] = false.
+Proof. reflexivity. Qed.
+
+Example existsb_2: existsb (andb true) [true;true;false] = true.
+Proof. reflexivity. Qed.
+
+Example existsb_3: existsb oddb [1;0;0;0;0;3] = true.
+Proof. reflexivity. Qed.
+
+Example existsb_4: existsb evenb [] = false.
+Proof. reflexivity. Qed.
+
+
+Definition existsb' {X: Type} (test: X -> bool) (l: list X) :=
+  negb (forallb (fun a => negb (test a)) l).
+
+Example existsb'_1: existsb' (beq_nat 5) [0;2;3;6] = false.
+Proof. reflexivity. Qed.
+
+Example existsb'_2: existsb' (andb true) [true;true;false] = true.
+Proof. reflexivity. Qed.
+
+Example existsb'_3: existsb' oddb [1;0;0;0;0;3] = true.
+Proof. reflexivity. Qed.
+
+Example existsb'_4: existsb' evenb [] = false.
+Proof. reflexivity. Qed.
+
+
+Theorem existsb_existsb': forall (X: Type) (test: X -> bool) (l: list X),
+  existsb test l = existsb' test l.
+Proof.
+  intros.
+  unfold existsb.
+  unfold existsb'.
+  induction l as [| h t IH].
+  - simpl. reflexivity.
+  - simpl.
+    destruct (test h) eqn:testH.
+    + simpl. reflexivity.
+    + simpl. apply IH.
+Qed.
+
+Definition forallb' {X: Type} (test: X -> bool) (l: list X) : bool :=
+  fold (fun item acc => acc && (test item)) l true.
+
+Example forallb'_1: forallb' oddb [1;3;5;7;9] = true.
+Proof. reflexivity. Qed.
+
+Example forallb'_2: forallb' negb [false;false] = true.
+Proof. reflexivity. Qed.
+
+Example forallb'_3: forallb' evenb [0;2;4;5] = false.
+Proof. reflexivity. Qed.
+
+Example forallb'_4: forallb' (beq_nat 5) [] = true.
+Proof. reflexivity. Qed.
+
+Theorem andb_true_r: forall (a: bool),
+    a && true = a.
+Proof.
+  intros.
+  destruct a.
+  - reflexivity.
+  - reflexivity.
+Qed.
+
+Theorem forallb_forallb': forall (X: Type) (test: X -> bool) (l: list X),
+  forallb test l = forallb' test l.
+Proof.
+  intros.
+  unfold forallb.
+  unfold forallb'.
+  induction l as [| h t IH].
+  - simpl. reflexivity.
+  - simpl.
+    destruct (test h) eqn:testH.
+    + simpl.
+      rewrite -> IH.
+      rewrite -> andb_true_r.
+      reflexivity.
+    + simpl.
+      rewrite -> andb_false_r.
+      reflexivity.
+Qed.
+
