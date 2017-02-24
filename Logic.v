@@ -470,3 +470,196 @@ Proof.
       apply Hx.
 Qed.
 
+Fixpoint In {A : Type} (x : A) (l : list A) : Prop :=
+  match l with
+  | [] => False
+  | h :: t => x = h \/ In x t
+  end.
+
+Example In_example_1 : In 4 [1; 2; 3; 4; 5].
+Proof.
+  simpl.
+  right. right. right. left.
+  reflexivity.
+Qed.
+
+Example In_example_2 :
+  forall n, In n [2; 4] ->
+  exists n', n = 2 * n'.
+Proof.
+  simpl.
+  intros.
+  destruct H as [H' | [H' | []]].
+  - exists 1.
+    rewrite -> H'.
+    reflexivity.
+  - exists 2.
+    rewrite -> H'.
+    reflexivity.
+Qed.
+
+Lemma In_map :
+  forall (A B : Type) (f : A -> B) (l : list A) (x : A),
+    In x l ->
+    In (f x) (map f l).
+Proof.
+  intros.
+  generalize dependent H.
+  induction l as [| h t IH].
+  - intros.
+    simpl in H.
+    destruct H.
+  - intros.
+    simpl in H.
+    destruct H as [Hl | Hr].
+    + rewrite -> Hl.
+      simpl.
+      left.
+      reflexivity.
+    + simpl.
+      right.
+      apply IH.
+      apply Hr.
+Qed.
+
+Lemma In_map_iff :
+  forall (A B : Type) (f : A -> B) (l : list A) (y : B),
+    In y (map f l) <->
+    exists x, f x = y /\ In x l.
+Proof.
+  intros.
+  split.
+  - induction l as [| h t IH].
+    + intros. simpl in H. destruct H.
+    + intros.
+      simpl.
+      destruct H.
+      * exists h.
+        split.
+          rewrite -> H. reflexivity.
+          left. reflexivity.
+      * apply IH in H.
+        destruct H.
+          exists x.
+          destruct H.
+          split.
+            apply H.
+            right. apply H0.
+  - induction l as [| h t IH].
+    + intros.
+      simpl.
+      destruct H.
+      destruct H.
+      destruct H0.
+    + simpl.
+      intros.
+      destruct H.
+      destruct H.
+      destruct H0.
+      * rewrite -> H0 in H.
+        left.
+        rewrite -> H.
+        reflexivity.
+      * simpl.
+        right.
+        apply IH.
+        exists x.
+        split.
+          apply H.
+          apply H0.
+Qed.
+
+Lemma in_app_iff : forall A l l' (a:A),
+  In a (l++l') <-> In a l \/ In a l'.
+Proof.
+  intros.
+  split.
+  - induction l as [| h t IH].
+    + simpl. intros. right. apply H.
+    + simpl. intros.
+      apply or_assoc.
+      destruct H.
+      * left. apply H.
+      * right. apply IH. apply H.
+  - induction l as [| h t IH].
+    + simpl. intros. destruct H.
+        destruct H.
+        apply H.
+    + simpl. intros. destruct H. destruct H.
+        left. apply H.
+        right. apply IH. left. apply H.
+        right. apply IH. right. apply H.
+Qed.
+
+Fixpoint All {T : Type} (P : T -> Prop) (l : list T) : Prop :=
+  match l with
+  | [] => True
+  | h :: t => P h /\ All P t
+  end.
+
+Lemma All_In :
+  forall T (P : T -> Prop) (l : list T),
+    (forall x, In x l -> P x) <->
+    All P l.
+Proof.
+  intros.
+  split.
+  - induction l as [| h t IH].
+    + simpl. intros. reflexivity.
+    + simpl. intros.
+      split.
+      * apply H. left. reflexivity.
+      * apply IH. intros.
+        apply H. right. apply H0.
+  - induction l as [| h t IH].
+    + simpl. intros. destruct H0.
+    + simpl. intros.
+      destruct H.
+      destruct H0.
+      * rewrite -> H0. apply H.
+      * apply IH.
+          apply H1.
+          apply H0.
+Qed.
+
+Definition combine_odd_even (Podd Peven : nat -> Prop) : nat -> Prop :=
+  fun (x:nat) => if oddb x then Podd x
+                           else Peven x.
+
+Theorem combine_odd_even_intro :
+  forall (Podd Peven : nat -> Prop) (n : nat),
+    (oddb n = true ->  Podd n) ->
+    (oddb n = false -> Peven n) ->
+    combine_odd_even Podd Peven n.
+Proof.
+  intros.
+  unfold combine_odd_even.
+  destruct (oddb n).
+  - apply H. reflexivity.
+  - apply H0. reflexivity.
+Qed.
+
+Theorem combine_odd_even_elim_odd :
+  forall (Podd Peven : nat -> Prop) (n : nat),
+    combine_odd_even Podd Peven n ->
+    oddb n = true ->
+    Podd n.
+Proof.
+  intros.
+  unfold combine_odd_even in H.
+  rewrite -> H0 in H.
+  apply H.
+Qed.
+
+Theorem combine_odd_even_elim_even :
+  forall (Podd Peven : nat -> Prop) (n : nat),
+    combine_odd_even Podd Peven n ->
+    oddb n = false ->
+    Peven n.
+Proof.
+  intros.
+  unfold combine_odd_even in H.
+  rewrite -> H0 in H.
+  apply H.
+Qed.
+
