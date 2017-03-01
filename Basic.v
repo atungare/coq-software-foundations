@@ -410,8 +410,9 @@ Qed.
 
 Inductive bin : Type :=
   | Zero : bin
-  | Twice : bin -> bin
-  | TwicePlusOne : bin -> bin.
+  | TwicePlusOne : bin -> bin
+  | Twice : bin -> bin.
+
 
 Fixpoint incr (b: bin) : bin :=
   match b with
@@ -444,7 +445,3 @@ Proof. reflexivity. Qed.
 Example test_bin_incr5: (bin_to_nat (incr Zero)) = S (bin_to_nat Zero).
 Proof. reflexivity. Qed.
 
-(* is_this_induction ??? *)
-Theorem incr_bin_to_nat_commutative: forall b:bin,
-  (bin_to_nat (incr b)) = S (bin_to_nat b).
-Proof. Admitted.

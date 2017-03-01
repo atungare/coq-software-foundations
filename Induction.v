@@ -257,11 +257,141 @@ Proof.
   intros.
   induction b as [| b' | b'' IHb'].
   - simpl. reflexivity.
-  - simpl. rewrite <- plus_1_r. reflexivity.
   - simpl. rewrite -> IHb'. simpl.
-    replace (bin_to_nat b'' + 0) with (bin_to_nat b'').
+    replace (bin_to_nat b' + 0) with (bin_to_nat b').
     + rewrite <- plus_1_r. rewrite <- plus_n_Sm. reflexivity.
     + rewrite <- plus_O_r. reflexivity.
+  - simpl. rewrite <- plus_1_r. reflexivity.
 Qed.
 
 (* binary inverse *)
+Fixpoint nat_to_bin (n: nat) : bin :=
+  match n with
+  | O => Zero
+  | S n' => incr (nat_to_bin n')
+  end.       
+
+Theorem nat_bin_nat: forall (n: nat),
+  bin_to_nat (nat_to_bin n) = n.
+Proof.
+  intros.
+  induction n as [| n' IH].
+  - reflexivity.
+  - simpl.
+    rewrite -> bin_to_nat_pres_incr.
+    rewrite -> IH.
+    reflexivity.
+Qed.
+
+Fixpoint normalize (b: bin) : bin :=
+  match b with
+  | Zero => Zero
+  | Twice b' => match (normalize b') with
+                | Zero => Zero
+                | _ => Twice (normalize b')
+                end
+  | TwicePlusOne b' => TwicePlusOne (normalize b')
+  end.
+
+Compute (normalize (TwicePlusOne (Twice (TwicePlusOne (Twice (TwicePlusOne Zero)))))).
+
+Theorem nat_twice_plus_one: forall (n:nat),
+    nat_to_bin (n + n + 1) = TwicePlusOne (nat_to_bin n).
+Proof.
+  intros.
+  induction n as [| n' IH].
+  - reflexivity.
+  - simpl.
+    replace (n' + S n') with (S (n' + n')).
+    + simpl.
+      rewrite -> IH.
+      reflexivity.
+    + rewrite -> plus_n_Sm.
+      reflexivity.
+Qed.
+
+Theorem normalize_incr: forall (b: bin),
+  incr (normalize b) = normalize (incr b).
+Proof.
+  intros.
+  induction b as [| b' | b'' IH].
+  - reflexivity.
+  - simpl.
+    rewrite <- IHb'.
+    destruct (normalize b').
+    + reflexivity.
+    + reflexivity.
+    + reflexivity.
+  - simpl.
+    destruct (normalize b'').
+    + reflexivity.
+    + reflexivity.
+    + reflexivity. 
+Qed.
+
+Lemma incr_injective: forall (b1 b2 : bin),
+  incr b1 = incr b2 ->
+  normalize b1 = normalize b2.
+Proof.
+  intros.
+  destruct b1.
+  - inversion H.
+    
+Theorem nat_twice: forall (n: nat),
+    nat_to_bin (n + n) = normalize (Twice (nat_to_bin n)).
+Proof.
+  intros.
+  induction n as [| n' IH].
+  - reflexivity.
+  - rewrite <- plus_n_Sm.
+    simpl.
+    rewrite <- normalize_incr.
+    rewrite -> IH.
+    induction (nat_to_bin n') as [| b | b' IHb].
+    + reflexivity.
+    + reflexivity.
+    + rewrite <- IH.
+
+
+Admitted.
+
+Theorem normalize_idemp: forall (b: bin),
+  normalize (normalize b) = normalize b.
+Proof.
+  intros.
+  induction b as [| b' | b'' IH].
+  - reflexivity.
+  - simpl.
+    rewrite -> IHb'.
+    reflexivity.
+  - 
+  - induction b'' as [| c | c' IH'].
+    + reflexivity.
+    + simpl.
+      simpl in IH.
+      rewrite -> IH.
+      reflexivity.
+    + 
+
+Admitted.
+
+
+Theorem bin_nat_bin: forall (b: bin),
+  nat_to_bin (bin_to_nat b) = normalize b.
+Proof.
+  intros.
+  induction b as [| b' | b'' IH].
+  - reflexivity.
+  - simpl.
+    rewrite <- plus_O_r.
+    rewrite -> nat_twice_plus_one.
+    rewrite -> IHb'.
+    reflexivity.
+  - simpl.
+    rewrite <- plus_O_r.
+    rewrite -> nat_twice.
+    simpl.
+    rewrite -> IH.
+    rewrite -> normalize_idemp.
+    reflexivity.
+Qed.
