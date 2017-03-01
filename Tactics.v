@@ -662,4 +662,3 @@ Proof.
     rewrite -> IH.
     reflexivity.
 Qed.
-

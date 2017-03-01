@@ -329,14 +329,6 @@ Proof.
     + reflexivity. 
 Qed.
 
-Lemma incr_injective: forall (b1 b2 : bin),
-  incr b1 = incr b2 ->
-  normalize b1 = normalize b2.
-Proof.
-  intros.
-  destruct b1.
-  - inversion H.
-    
 Theorem nat_twice: forall (n: nat),
     nat_to_bin (n + n) = normalize (Twice (nat_to_bin n)).
 Proof.
@@ -351,8 +343,6 @@ Proof.
     + reflexivity.
     + reflexivity.
     + rewrite <- IH.
-
-
 Admitted.
 
 Theorem normalize_idemp: forall (b: bin),
@@ -364,15 +354,12 @@ Proof.
   - simpl.
     rewrite -> IHb'.
     reflexivity.
-  - 
   - induction b'' as [| c | c' IH'].
     + reflexivity.
     + simpl.
       simpl in IH.
       rewrite -> IH.
       reflexivity.
-    + 
-
 Admitted.
 
 
