@@ -293,7 +293,9 @@ Fixpoint normalize (b: bin) : bin :=
   | TwicePlusOne b' => TwicePlusOne (normalize b')
   end.
 
-Compute (normalize (TwicePlusOne (Twice (TwicePlusOne (Twice (TwicePlusOne Zero)))))).
+Compute (normalize (TwicePlusOne (Twice (TwicePlusOne (Twice (TwicePlusOne (Twice Zero))))))).
+
+Compute (normalize (normalize (Twice Zero))).
 
 Theorem nat_twice_plus_one: forall (n:nat),
     nat_to_bin (n + n + 1) = TwicePlusOne (nat_to_bin n).
@@ -354,6 +356,15 @@ Proof.
   - simpl.
     rewrite -> IHb'.
     reflexivity.
+  - induction (normalize (Twice b'')).
+    + reflexivity.
+    + simpl.
+      rewrite -> IHb.
+      reflexivity.
+    + 
+      rewrite -> IHb.
+      simpl.
+
   - induction b'' as [| c | c' IH'].
     + reflexivity.
     + simpl.
