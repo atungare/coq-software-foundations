@@ -385,3 +385,122 @@ Proof.
 Qed.
 
 Module R.
+
+Inductive R : nat -> nat -> nat -> Prop :=
+| c1 : R 0 0 0
+| c2 : forall m n o, R m n o -> R (S m) n (S o)
+| c3 : forall m n o, R m n o -> R m (S n) (S o)
+| c4 : forall m n o, R (S m) (S n) (S (S o)) -> R m n o
+| c5 : forall m n o, R m n o -> R n m o.
+
+Theorem r112: R 1 1 2.
+Proof.
+  intros.
+  apply c2. apply c3. apply c1.
+Qed.
+
+Definition fR : nat -> nat -> nat := plus.
+
+Theorem R_equiv_fR : forall m n o, R m n o <-> fR m n = o.
+Proof.
+  intros.
+  split.
+  - intros.
+    unfold fR.
+    induction H.
+    + reflexivity.
+    + simpl.
+      rewrite -> IHR.
+      reflexivity.
+    + rewrite <- plus_n_Sm.
+      rewrite -> IHR.
+      reflexivity.
+    + simpl in IHR.
+      apply S_injective in IHR.
+      rewrite <- plus_n_Sm in IHR.
+      apply S_injective in IHR.
+      apply IHR.
+    + rewrite -> plus_comm.
+      apply IHR.
+  - unfold fR.
+    intros.
+    destruct H.
+    + induction m.
+      * induction n.
+          simpl. apply c1.
+          simpl. apply c3. simpl in IHn. apply IHn.
+      * simpl. apply c2. apply IHm.
+Qed.
+
+End R.
+
+Inductive subseq : list nat -> list nat -> Prop :=
+| nil_is_subseq: forall (l2: list nat), subseq [] l2
+| combine_subseq: forall (l1 l2: list nat) (x: nat),
+    subseq l1 l2  ->
+    subseq (x :: l1) (x :: l2)
+| subseq_larger: forall (l1 l2: list nat) (x: nat),
+    subseq l1 l2 -> subseq l1 (x :: l2).
+
+Theorem subseq_refl : forall (l: list nat),
+    subseq l l.
+Proof.
+  intros.
+  induction l as [| h t IH].
+  - apply nil_is_subseq.
+  - apply combine_subseq. apply IH.
+Qed.
+
+Theorem subseq_app : forall (l1 l2 l3: list nat),
+  subseq l1 l2 -> subseq l1 (l2 ++ l3).
+Proof.
+  intros.
+  induction H.
+  - apply nil_is_subseq.
+  - simpl. apply combine_subseq. apply IHsubseq.
+  - simpl. apply subseq_larger. apply IHsubseq.
+Qed.
+
+Theorem subseq_trans :  forall (l1 l2 l3: list nat),
+  subseq l1 l2 /\ subseq l2 l3 -> subseq l1 l3.
+Proof.
+  intros.
+  destruct H.
+  generalize dependent H.
+  generalize dependent l1.
+  induction H0.
+  - intros.
+    inversion H.
+    apply nil_is_subseq.
+  - intros.
+    inversion H.
+    + apply nil_is_subseq.
+    + apply combine_subseq.
+      apply IHsubseq.
+      apply H3.
+    + apply subseq_larger.
+      apply IHsubseq.
+      apply H3.
+  - intros.
+    apply subseq_larger.
+    apply IHsubseq.
+    apply H.
+Qed.
+
+Inductive R : nat ->  list nat -> Prop :=
+| c1 : R 0 []
+| c2 : forall n l, R n l -> R (S n) (n :: l)
+| c3 : forall n l, R (S n) l -> R n l.
+
+Example r210: R 2 [1;0].
+Proof.
+  apply c2. apply c2. apply c1.
+Qed.
+
+Example r11210: R 1 [1;2;1;0].
+Proof.
+  apply c3. apply c2. apply c3.
+  apply c3. apply c2. apply c2.
+  apply c2. apply c1.
+Qed.
+
