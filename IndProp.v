@@ -831,25 +831,18 @@ Proof.
     + intros. inversion H.
   - inversion Heqre'.
     rewrite -> H2 in *.
-    generalize dependent s1.
-    induction s2.
+    induction s1.
+    + intros. simpl. apply IHexp_match2. apply Heqre'.
     + intros.
-      rewrite -> app_nil_r.
-      exists [s1].
-      split.
-      * simpl. rewrite -> app_nil_r. reflexivity.
-      * simpl. intros. destruct H1.
-          rewrite -> H1.  apply H.
-          destruct H1.
-    + simpl. intros.
       apply IHexp_match2 in Heqre'.
       destruct Heqre'.
       destruct H1.
-      exists (s1::x0).
+      exists ((x::s1)::x0).
       split.
       * rewrite -> H1. simpl. reflexivity.
-      * simpl. intros.
+      * intros. simpl.
         destruct H4.
-          rewrite -> H4. apply H.
-          apply H3 in H4. apply H4.
+        { rewrite -> H4. apply H. }
+        { apply H3 in H4. apply H4. }
 Qed.
+
