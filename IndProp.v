@@ -748,3 +748,108 @@ Proof.
       apply MStar0.
 Qed.
 
+Lemma star_app: forall T (s1 s2 : list T) (re : reg_exp T),
+  s1 =~ Star re ->
+  s2 =~ Star re ->
+  s1 ++ s2 =~ Star re.
+Proof.
+  intros T s1 s2 re H1.
+  remember (Star re) as re'.
+  generalize dependent s2.
+  induction H1 as [|x'|s1 re1 s2' re2 Hmatch1 IH1 Hmatch2 IH2
+                   |s1 re1 re2 Hmatch IH|re1 s2' re2 Hmatch IH
+                   |re''|s1 s2' re'' Hmatch1 IH1 Hmatch2 IH2].
+  - inversion Heqre'.
+  - inversion Heqre'.
+  - inversion Heqre'.
+  - inversion Heqre'.
+  - inversion Heqre'.
+  - inversion Heqre'.
+    intros. apply H.
+  - inversion Heqre'.
+    rewrite -> H0 in IH2, Hmatch1.
+    intros. rewrite <- app_assoc.
+    apply MStarApp.
+    + apply Hmatch1.
+    + apply IH2.
+      * reflexivity.
+      * apply H.
+Qed.
+
+Lemma cons_app_equiv: forall (T: Type) (t: list T) (h: T),
+  h :: t = [h] ++ t.
+Proof.
+  simpl. reflexivity.
+Qed.
+
+Lemma s_re__s_star_re: forall (T: Type) (s: list T) (re: reg_exp T),
+    s =~ re -> s =~ Star re.
+Proof.
+  intros.
+  destruct re.
+  + inversion H.
+  + inversion H.
+    apply MStar0.
+  + inversion H.
+    rewrite <- (app_nil_r T [t]).
+    apply MStarApp.
+    - apply MChar.
+    - apply MStar0.
+  + rewrite <- (app_nil_r T s).
+    apply MStarApp.
+    - apply H.
+    - apply MStar0.
+  + rewrite <- (app_nil_r T s).
+    apply MStarApp.
+    - apply H.
+    - apply MStar0.
+  + rewrite <- (app_nil_r T s).
+    apply MStarApp.
+    - apply H.
+    - apply MStar0.
+Qed.
+
+
+Lemma MStar'' : forall T (s : list T) (re : reg_exp T),
+  s =~ Star re ->
+  exists ss : list (list T),
+    s = fold app ss []
+    /\ forall s', In s' ss -> s' =~ re.
+Proof.
+  intros.
+  remember (Star re) as re'.
+  induction H.
+  - inversion Heqre'.
+  - inversion Heqre'.
+  - inversion Heqre'.
+  - inversion Heqre'.
+  - inversion Heqre'.
+  - inversion Heqre'.
+    exists [].
+    split.
+    + reflexivity.
+    + intros. inversion H.
+  - inversion Heqre'.
+    rewrite -> H2 in *.
+    generalize dependent s1.
+    induction s2.
+    + intros.
+      rewrite -> app_nil_r.
+      exists [s1].
+      split.
+      * simpl. rewrite -> app_nil_r. reflexivity.
+      * simpl. intros. destruct H1.
+          rewrite -> H1.  apply H.
+          destruct H1.
+    + simpl. intros.
+      apply IHexp_match2 in Heqre'.
+      destruct Heqre'.
+      destruct H1.
+      exists (s1::x0).
+      split.
+      * rewrite -> H1. simpl. reflexivity.
+      * simpl. intros.
+        destruct H4.
+          rewrite -> H4. apply H.
+          apply H3 in H4. apply H4.
+Qed.
