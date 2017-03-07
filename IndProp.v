@@ -846,3 +846,309 @@ Proof.
         { apply H3 in H4. apply H4. }
 Qed.
 
+
+Theorem filter_not_empty_In : forall n l,
+  filter (beq_nat n) l <> [] ->
+  In n l.
+Proof.
+  intros.
+  induction l as [| h t IH].
+  - apply H. reflexivity.
+  - simpl. destruct (beq_nat n h) eqn:beqnh.
+    + rewrite beq_nat_true_iff in beqnh.
+      left. apply beqnh.
+    + simpl in H. rewrite beqnh in H.
+      right. apply IH. apply H.
+Qed.
+
+Module FirstTry.
+
+Inductive reflect : Prop -> bool -> Prop :=
+| ReflectT: forall P:Prop, P -> reflect P true
+| ReflectF: forall P:Prop, ~ P -> reflect P false.
+
+End FirstTry.
+
+
+Inductive reflect (P: Prop) : bool -> Prop :=
+| ReflectT: P -> reflect P true
+| ReflectF: ~ P -> reflect P false.
+
+Theorem iff_reflect : forall P b, (P <-> b = true) -> reflect P b.
+Proof.
+  intros. destruct b.
+  - apply ReflectT.
+    rewrite H.
+    reflexivity.
+  - apply ReflectF.
+    unfold not. intros.
+    apply H in H0.
+    inversion H0.
+Qed.
+
+Theorem reflect_iff : forall P b, reflect P b -> (P <-> b = true).
+Proof.
+  intros.
+  destruct b.
+  - inversion H.
+    split.
+    + intros.
+      reflexivity.
+    + intros.
+      apply H0.
+  - inversion H.
+    unfold not in H0.
+    split.
+    + intros.
+      exfalso.
+      apply H0.
+      apply H1.
+    + intros.
+      inversion H1.
+Qed.
+
+
+Lemma beq_natP : forall n m, reflect (n = m) (beq_nat n m).
+Proof.
+  intros.
+  apply iff_reflect.
+  rewrite beq_nat_true_iff.
+  reflexivity.
+Qed.
+
+Theorem filter_not_empty_In' : forall n l,
+  filter (beq_nat n) l <> [] ->
+  In n l.
+Proof.
+  intros n l.
+  induction l as [| h t IH].
+  - intros. apply H. reflexivity.
+  - simpl. destruct (beq_natP n h).
+    + intros. left. apply H.
+    + intros. right. apply IH. apply H0.
+Qed.
+
+Fixpoint count n l :=
+  match l with
+  | [] => 0
+  | m :: l' => (if beq_nat n m then 1 else 0) + count n l'
+  end.
+
+
+Theorem beq_natP_practice : forall n l,
+  count n l = 0 -> ~(In n l).
+Proof.
+  unfold not.
+  intros n l.
+  induction l as [| h t IH].
+  - intros. inversion H0.
+  - simpl. destruct (beq_natP n h).
+    + intros. inversion H0.
+    + simpl. intros.
+      apply IH.
+      * apply H0.
+      * destruct H1.
+        { exfalso. apply H. apply H1. }
+        { apply H1. }
+Qed.
+
+Inductive nostutter {X:Type} : list X -> Prop :=
+| nostutter_nil: nostutter []
+| nostutter_cons: forall (x:X), nostutter (x :: [])
+| nostutter_xy: forall (x y: X) (l: list X),
+    x <> y -> nostutter (y :: l) -> nostutter (x :: y :: l).
+
+Example test_nostutter_1: nostutter [3;1;4;1;5;6].
+Proof.
+  repeat constructor; apply beq_nat_false_iff; auto.
+Qed.
+
+Example test_nostutter_2: nostutter (@nil nat).
+Proof.
+  repeat constructor.
+Qed.
+
+Example test_nostutter_3: nostutter [5].
+Proof.
+  repeat constructor.
+Qed.
+
+Example test_nostutter_4: not (nostutter [3;1;1;4]).
+  Proof. intro.
+  repeat match goal with
+    h: nostutter _ |- _ => inversion h; clear h; subst
+  end.
+  contradiction H1; auto.
+Qed.
+
+
+Inductive in_order_merge {X:Type} : list X -> list X -> list X -> Prop :=
+| iom_nil: in_order_merge [] [] []
+| iom_left: forall (x: X) (l1 l2 l: list X),
+    in_order_merge l1 l2 l ->
+    in_order_merge (x :: l1) l2 (x :: l)
+| iom_right: forall (x: X) (l1 l2 l: list X),
+    in_order_merge l1 l2 l ->
+    in_order_merge l1 (x :: l2) (x :: l).
+
+
+Theorem filter_in_order_merge: forall (X: Type) (test: X -> bool) (l l1 l2: list X),
+  in_order_merge l1 l2 l ->
+  All (fun a => test a = true) l1 ->
+  All (fun b => test b = false) l2 ->
+  filter test l = l1.
+Proof.
+  intros.
+  induction H.
+  - reflexivity.
+  - simpl. 
+    inversion H0.
+    rewrite H2.
+    apply tail_eq.
+    apply IHin_order_merge.
+    + apply H3.
+    + apply H1.
+  - simpl.
+    inversion H1.
+    rewrite H2.
+    apply IHin_order_merge.
+    + apply H0.
+    + apply H3.
+Qed.
+
+Inductive pal {X:Type} : list X -> Prop :=
+| pal_nil: pal []
+| pal_single: forall (x: X), pal [x]
+| pal_inductive: forall (x: X) (l: list X),
+    pal l ->
+    pal (x :: l ++ [x]).
+
+Theorem pal_app_rev: forall (X: Type) (l: list X),
+  pal (l ++ rev l).
+Proof.
+  intros.
+  induction l as [|h t IH].
+  - simpl. apply pal_nil.
+  - simpl.
+    rewrite -> app_assoc.
+    apply (pal_inductive h (t ++ rev t)).
+    apply IH.
+Qed.
+
+Theorem pal_rev: forall (X: Type) (l: list X),
+  pal l -> l = rev l.
+Proof.
+  intros.
+  induction H.
+  - reflexivity.
+  - reflexivity.
+  - simpl.
+    rewrite -> rev_app_distr.
+    rewrite <- IHpal.
+    simpl.
+    reflexivity.
+Qed.
+
+
+Inductive disjoint {X:Type} : list X -> list X -> Prop :=
+| disjoint_nil: disjoint [] []
+| disjoint_left: forall (x: X) (l1 l2: list X),
+    ~ In x l2 ->
+    disjoint l1 l2 ->
+    disjoint (x :: l1) l2
+| disjoint_right: forall (x: X) (l1 l2: list X),
+    ~ In x l1 ->
+    disjoint l1 l2 ->
+    disjoint l1 (x :: l2).
+
+
+Inductive NoDup {X:Type} : list X -> Prop :=
+| nodup_nil: NoDup []
+| nodup_inductive: forall (x: X) (l: list X),
+    ~ In x l ->
+    NoDup l ->
+    NoDup (x :: l).
+
+Lemma disjoint_nil_r: forall (X: Type) (l: list X),
+    disjoint l [].
+Proof.
+  intros.
+  induction l as [| h t IH].
+  + apply disjoint_nil.
+  + apply disjoint_left.
+    * intro. destruct H.
+    * apply IH.
+Qed.
+
+Lemma disjoint_nil_l: forall (X: Type) (l: list X),
+    disjoint [] l.
+Proof.
+  intros.
+  induction l as [| h t IH].
+  + apply disjoint_nil.
+  + apply disjoint_right.
+    * intro. destruct H.
+    * apply IH.
+Qed.
+
+
+Lemma in_split : forall (X:Type) (x:X) (l:list X),
+  In x l ->
+  exists l1 l2, l = l1 ++ x :: l2.
+Proof.
+  intros.
+  generalize dependent x.
+  induction l as [| h t IH].
+  - intros. inversion H.
+  - intros.
+    simpl in H.
+    destruct H.
+    + rewrite -> H.
+      exists [].
+      exists t.
+      simpl.
+      reflexivity.
+    + apply IH in H.
+      destruct H.
+      destruct H.
+      exists (h :: x0).
+      exists x1.
+      simpl.
+      rewrite <- H.
+      reflexivity.
+Qed.
+
+(* Inductive repeats {X:Type} : list X -> Prop :=
+ | repeats_any_larger: forall (x: X) (l: list X),
+     repeats l ->
+     repeats (x :: l)
+ | repeats_inductive: forall (x: X) (l: list X),
+     In x l ->
+     repeats (x :: l).
+
+
+ Theorem pigeonhole_principle: forall (X:Type) (l1 l2:list X),
+     excluded_middle ->
+     (forall x, In x l1 -> In x l2) ->
+     length l2 < length l1 ->
+     repeats l1.
+ Proof.
+   intros X l1.
+   induction l1 as [|x l1' IHl1'].
+   - intros.
+     inversion H1.
+   - intros.
+     
+     
+     apply (IHl1' (x :: l1') H _ H1).
+     + 
+       aply 
+       + apply repeats_any_larger.
+       apply H.
+     + intros.
+       rewrite -> cons_app_equiv.
+       apply in_app_iff.
+       right.
+       apply H2.
+     + *)
+
