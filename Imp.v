@@ -123,7 +123,48 @@ Proof.
 Qed.
 
 
+Theorem In10 : In 10 [1;2;3;4;5;6;7;8;9;10].
+Proof.
+  repeat (try (left; reflexivity); right).
+Qed.
 
 
+Theorem In10' : In 10 [1;2;3;4;5;6;7;8;9;10].
+Proof.
+  repeat (right; try (left; reflexivity)).
+Qed.
+
+
+Fixpoint optimize_0plus_b (b : bexp) : bexp :=
+  match b with
+  | BEq l r => BEq (optimize_0plus l) (optimize_0plus r)
+  | BLe l r => BLe (optimize_0plus l) (optimize_0plus r)
+  | BNot b' => BNot (optimize_0plus_b b')
+  | BAnd l r => BAnd (optimize_0plus_b l) (optimize_0plus_b r)
+  | _ => b
+  end.
+
+
+Theorem optimize_0plus_b_sound : forall b,
+  beval (optimize_0plus_b b) = beval b.
+Proof.
+  intros.
+  induction b;
+    try (simpl; reflexivity);
+    try (simpl; repeat rewrite optimize_0plus_sound; reflexivity).
+  - simpl. rewrite IHb. reflexivity.
+  - simpl. rewrite IHb1. rewrite IHb2. reflexivity.
+Qed.
+
+Tactic Notation "simpl_and_try" tactic(c) :=
+  simpl;
+  try c.
+
+Example silly_presburger_example : forall m n o p,
+  m + n <= n + o /\ o + 3 = p + 3 ->
+  m <= p.
+Proof.
+  intros. omega.
+Qed.
 
 
