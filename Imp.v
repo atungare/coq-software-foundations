@@ -777,8 +777,7 @@ Theorem beval_beval_ss: forall st b,
   beval st b = beval_ss st b.
 Proof.
   intros.
-  generalize dependent st.
-  induction b; simpl; intros; reflexivity.
+  destruct b; reflexivity.
 Qed.
 
 
