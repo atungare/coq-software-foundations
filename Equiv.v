@@ -873,3 +873,334 @@ Qed.
 
 
 
+Fixpoint subst_aexp (i : id) (u : aexp) (a : aexp) : aexp :=
+  match a with
+  | ANum n       =>
+      ANum n
+  | AId i'       =>
+      if beq_id i i' then u else AId i'
+  | APlus a1 a2  =>
+      APlus (subst_aexp i u a1) (subst_aexp i u a2)
+  | AMinus a1 a2 =>
+      AMinus (subst_aexp i u a1) (subst_aexp i u a2)
+  | AMult a1 a2  =>
+      AMult (subst_aexp i u a1) (subst_aexp i u a2)
+  end.
+
+Example subst_aexp_ex :
+  subst_aexp X (APlus (ANum 42) (ANum 53))
+             (APlus (AId Y) (AId X))
+= (APlus (AId Y) (APlus (ANum 42) (ANum 53))).
+Proof. reflexivity. Qed.
+
+Definition subst_equiv_property := forall i1 i2 a1 a2,
+  cequiv (i1 ::= a1;; i2 ::= a2)
+         (i1 ::= a1;; i2 ::= subst_aexp i1 a1 a2).
+
+Theorem subst_inequiv :
+  ~ subst_equiv_property.
+Proof.
+  unfold not, subst_equiv_property.
+  intros.
+  remember (X ::= APlus (AId X) (ANum 1);;
+            Y ::= AId X)
+      as c1.
+  remember (X ::= APlus (AId X) (ANum 1);;
+            Y ::= APlus (AId X) (ANum 1))
+      as c2.
+  assert (cequiv c1 c2)
+    by (subst; apply H). 
+  remember (t_update (t_update empty_state X 1) Y 1) as st1.
+  remember (t_update (t_update empty_state X 1) Y 2) as st2.
+  assert (H1: c1 / empty_state \\ st1);
+  assert (H2: c2 / empty_state \\ st2);
+  try (subst;
+       apply E_Seq with (st' := (t_update empty_state X 1));
+       apply E_Ass; reflexivity).
+  apply H0 in H1.
+  assert (Hcontra: st1 = st2)
+    by (apply (ceval_deterministic c2 empty_state); assumption).
+  assert (Hcontra': st1 Y = st2 Y)
+    by (rewrite Hcontra; reflexivity).
+  subst.
+  inversion Hcontra'.
+Qed.
+
+
+Inductive var_not_used_in_aexp (X:id) : aexp -> Prop :=
+  | VNUNum: forall n, var_not_used_in_aexp X (ANum n)
+  | VNUId: forall Y, X <> Y -> var_not_used_in_aexp X (AId Y)
+  | VNUPlus: forall a1 a2,
+      var_not_used_in_aexp X a1 ->
+      var_not_used_in_aexp X a2 ->
+      var_not_used_in_aexp X (APlus a1 a2)
+  | VNUMinus: forall a1 a2,
+      var_not_used_in_aexp X a1 ->
+      var_not_used_in_aexp X a2 ->
+      var_not_used_in_aexp X (AMinus a1 a2)
+  | VNUMult: forall a1 a2,
+      var_not_used_in_aexp X a1 ->
+      var_not_used_in_aexp X a2 ->
+      var_not_used_in_aexp X (AMult a1 a2).
+
+Lemma aeval_weakening : forall i st a ni,
+  var_not_used_in_aexp i a ->
+  aeval (t_update st i ni) a = aeval st a.
+Proof.
+  intros.
+  induction a; simpl; inversion H; subst;
+    try reflexivity;
+    try (
+        apply IHa1 in H2; apply IHa2 in H3;
+        rewrite H2, H3;
+        reflexivity
+      ).
+  - apply (t_update_neq _ ni i i0 st H1).
+Qed.
+
+(* Theorem not_used_then_subst_equiv_property : forall i1 i2 a1 a2,
+         var_not_used_in_aexp i1 a1 ->
+         cequiv (i1 ::= a1;; i2 ::= a2)
+         (i1 ::= a1;; i2 ::= subst_aexp i1 a1 a2).
+         Proof.
+         intros.
+         apply CSeq_congruence.
+         - apply refl_cequiv.
+         - apply CAss_congruence.
+         unfold aequiv.
+         remember (subst_aexp i1 a1 a2) as sa.
+         induction a1; intros; simpl.
+         + simpl in Heqsa. *)
+
+Theorem inequiv_exercise:
+  ~ cequiv (WHILE BTrue DO SKIP END) SKIP.
+Proof.
+  unfold not; intros.
+  eapply loop_never_stops with empty_state empty_state.
+  unfold loop.
+  apply H.
+  apply E_Skip.
+Qed.
+
+Module Himp.
+
+Inductive com : Type :=
+  | CSkip : com
+  | CAss : id -> aexp -> com
+  | CSeq : com -> com -> com
+  | CIf : bexp -> com -> com -> com
+  | CWhile : bexp -> com -> com
+  | CHavoc : id -> com.
+
+Notation "'SKIP'" :=
+  CSkip.
+Notation "X '::=' a" :=
+  (CAss X a) (at level 60).
+Notation "c1 ;; c2" :=
+  (CSeq c1 c2) (at level 80, right associativity).
+Notation "'WHILE' b 'DO' c 'END'" :=
+  (CWhile b c) (at level 80, right associativity).
+Notation "'IFB' e1 'THEN' e2 'ELSE' e3 'FI'" :=
+  (CIf e1 e2 e3) (at level 80, right associativity).
+Notation "'HAVOC' l" := (CHavoc l) (at level 60).
+
+Inductive ceval : com -> state -> state -> Prop :=
+  | E_Skip : forall st : state, SKIP / st \\ st
+  | E_Ass : forall (st : state) (a1 : aexp) (n : nat) (X : id),
+      aeval st a1 = n ->
+      (X ::= a1) / st \\ t_update st X n
+  | E_Seq : forall (c1 c2 : com) (st st' st'' : state),
+      c1 / st \\ st' ->
+      c2 / st' \\ st'' ->
+      (c1 ;; c2) / st \\ st''
+  | E_IfTrue : forall (st st' : state) (b1 : bexp) (c1 c2 : com),
+      beval st b1 = true ->
+      c1 / st \\ st' ->
+      (IFB b1 THEN c1 ELSE c2 FI) / st \\ st'
+  | E_IfFalse : forall (st st' : state) (b1 : bexp) (c1 c2 : com),
+      beval st b1 = false ->
+      c2 / st \\ st' ->
+      (IFB b1 THEN c1 ELSE c2 FI) / st \\ st'
+  | E_WhileEnd : forall (b1 : bexp) (st : state) (c1 : com),
+      beval st b1 = false ->
+      (WHILE b1 DO c1 END) / st \\ st
+  | E_WhileLoop : forall (st st' st'' : state) (b1 : bexp) (c1 : com),
+      beval st b1 = true ->
+      c1 / st \\ st' ->
+      (WHILE b1 DO c1 END) / st' \\ st'' ->
+      (WHILE b1 DO c1 END) / st \\ st''
+  | E_Havoc : forall (X: id) (st: state) (n: nat),
+      (HAVOC X) / st \\ t_update st X n
+
+  where "c1 '/' st '\\' st'" := (ceval c1 st st').
+
+Example havoc_example1 : (HAVOC X) / empty_state \\ t_update empty_state X 0.
+Proof.
+  apply E_Havoc.
+Qed.
+
+
+Example havoc_example2 :
+  (SKIP;; HAVOC Z) / empty_state \\ t_update empty_state Z 42.
+Proof.
+  apply E_Seq with (st' := empty_state).
+  - apply E_Skip.
+  - apply E_Havoc.
+Qed.
+
+Definition cequiv (c1 c2 : com) : Prop := forall st st' : state,
+  c1 / st \\ st' <-> c2 / st \\ st'.
+
+
+Definition pXY :=
+  HAVOC X;; HAVOC Y.
+
+Definition pYX :=
+  HAVOC Y;; HAVOC X.
+
+Theorem pXY_cequiv_pYX :
+  cequiv pXY pYX \/ ~ cequiv pXY pYX.
+Proof.
+  left.
+  unfold not, cequiv, pXY, pYX; intros.
+  split; intros; inversion H; subst.
+  - inversion H2; inversion H5; subst.
+    apply E_Seq with (st' := (t_update st Y n0)).
+    + apply E_Havoc.
+    + assert (J :  t_update (t_update st X n) Y n0 =  t_update (t_update st Y n0) X n).
+      { apply t_update_permute.
+        unfold not; intros; inversion H0. }
+      rewrite J.
+      apply E_Havoc.
+  - inversion H2; inversion H5; subst.
+    apply E_Seq with (st' := (t_update st X n0)).
+    + apply E_Havoc.
+    + assert (J :  t_update (t_update st X n0) Y n =  t_update (t_update st Y n) X n0).
+      { apply t_update_permute.
+        unfold not; intros; inversion H0. }
+      rewrite <- J.
+      apply E_Havoc.
+Qed.
+
+Definition ptwice :=
+  HAVOC X;; HAVOC Y.
+
+Definition pcopy :=
+  HAVOC X;; Y ::= AId X.
+
+Theorem ptwice_cequiv_pcopy :
+  cequiv ptwice pcopy \/ ~ cequiv ptwice pcopy.
+Proof.
+  right.
+  unfold not, cequiv; intros.
+  remember (t_update (t_update empty_state X 1) Y 5) as st'.
+  assert (ptwice / empty_state \\ st' -> 
+          pcopy / empty_state \\ st')
+         by apply H.
+  assert (~ (pcopy / empty_state \\ st')).
+  {
+   unfold not; intros.
+   inversion H1; subst.
+   inversion H7; subst.
+   simpl in H8.
+   assert (t_update (t_update empty_state X 1) Y 5 X = 1).
+   { reflexivity. }
+   assert (t_update (t_update empty_state X 1) Y 5 Y = 5).
+   { reflexivity. }
+   rewrite <- H8 in H2, H3.
+   assert (st'0 X = 1).
+   { apply H2. }
+   assert (st'0 X = 5).
+   { apply H3. }
+   rewrite H5 in H6.
+   inversion H6.   
+  }
+  apply H1.
+  apply H0.
+  unfold ptwice.
+  rewrite Heqst'.
+  apply E_Seq with (st' := (t_update empty_state X 1)).
+  - apply E_Havoc.
+  - apply E_Havoc.
+Qed.
+
+
+Definition p1 : com :=
+  WHILE (BNot (BEq (AId X) (ANum 0))) DO
+    HAVOC Y;;
+    X ::= APlus (AId X) (ANum 1)
+  END.
+
+Definition p2 : com :=
+  WHILE (BNot (BEq (AId X) (ANum 0))) DO
+    SKIP
+  END.
+
+Lemma p1_may_diverge : forall st st', st X <> 0 ->
+  ~ p1 / st \\ st'.
+Proof.
+  unfold not, p1; intros.
+  remember (WHILE BNot (BEq (AId X) (ANum 0))
+        DO HAVOC Y;; X ::= APlus (AId X) (ANum 1) END) as p1.
+  induction H0; inversion Heqp1.
+  - subst. 
+    apply H.
+    simpl in H0.
+    apply negb_false_iff in H0.
+    apply beq_nat_true in H0.
+    assumption.
+  - apply IHceval2.
+    + rewrite H3 in H0_.
+      inversion H0_; subst.
+      inversion H8; subst.
+      rewrite t_update_eq.
+      simpl.
+      rewrite <- plus_n_Sm.
+      intros.
+      inversion H1.
+    + assumption.
+Qed.
+
+Lemma p2_may_diverge : forall st st', st X <> 0 ->
+  ~ p2 / st \\ st'.
+Proof.
+  unfold not, p2; intros.
+  remember (WHILE (BNot (BEq (AId X) (ANum 0))) DO
+    SKIP
+  END) as p2. 
+  induction H0; inversion Heqp2.
+  - apply H.
+    rewrite H2 in H0.
+    simpl in H0.
+    apply negb_false_iff in H0.
+    apply beq_nat_true in H0.
+    assumption.
+  - apply IHceval2.
+    + rewrite H3 in H0_.
+      inversion H0_; subst.
+      assumption.
+    + rewrite H2, H3. reflexivity.
+Qed.
+
+Theorem p1_p2_equiv : cequiv p1 p2.
+Proof.
+  split; intros; inversion H; subst;
+    try (apply E_WhileEnd; assumption);
+    try ((apply p1_may_diverge with (st := st) (st' := st') in H);
+         inversion H;
+         simpl in H2;
+         apply negb_true_iff in H2;
+         apply beq_nat_false in H2;
+         assumption).
+    - (apply p1_may_diverge with (st := st) (st' := st') in H).
+      inversion H.
+              apply negb_true_iff in H2;
+        apply beq_nat_false in H2.
+        assumption.
+   - (apply p2_may_diverge with (st := st) (st' := st') in H).
+      inversion H.
+              apply negb_true_iff in H2;
+        apply beq_nat_false in H2.
+        assumption.
+Qed.
+
